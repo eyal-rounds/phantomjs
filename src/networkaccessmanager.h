@@ -36,11 +36,13 @@
 #include <QSslConfiguration>
 #include <QTimer>
 #include <QStringList>
+#include "responsedatacapturer.h"
 
 class Config;
 class QAuthenticator;
 class QNetworkDiskCache;
 class QSslConfiguration;
+class ResponseDataCapturer;
 
 class TimeoutTimer : public QTimer
 {
@@ -122,12 +124,17 @@ private slots:
 private:
     void prepareSslConfiguration(const Config* config);
     QVariantList getHeadersFromReply(const QNetworkReply* reply);
+    void compileCaptureContentPatterns();
+    bool shouldCaptureResponse(const QString&);
 
     QHash<QNetworkReply*, int> m_ids;
+    QHash<QNetworkReply*, ResponseDataCapturer*> m_dataCapturer;
     QSet<QNetworkReply*> m_started;
     int m_idCounter;
     QNetworkDiskCache* m_networkDiskCache;
     QVariantMap m_customHeaders;
+    QStringList m_captureContentPatterns;
+    QList<QRegExp> m_compiledCaptureContentPatterns;
     QSslConfiguration m_sslConfiguration;
 };
 
