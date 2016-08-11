@@ -389,6 +389,7 @@ QNetworkReply* NetworkAccessManager::createRequest(Operation op, const QNetworkR
     } else {
         reply = QNetworkAccessManager::createRequest(op, req, outgoingData);
     }
+    m_dataCapturer.insert(reply, new ResponseDataCapturer(shouldCaptureResponse(req.url().toString())));
 
     // reparent jsNetworkRequest to make sure that it will be destroyed with QNetworkReply
     jsNetworkRequest.setParent(reply);
@@ -451,6 +452,9 @@ void NetworkAccessManager::handleStarted()
     if (!reply) {
         return;
     }
+    if(m_dataCapturer.contains(reply)){
+        m_dataCapturer[reply]->onReadyForRead(reply);
+    }
     if (m_started.contains(reply)) {
         return;
     }
@@ -480,11 +484,17 @@ void NetworkAccessManager::handleFinished(QNetworkReply* reply)
     if (!m_ids.contains(reply)) {
         return;
     }
-
+    QString responseBody("");
+    if(m_dataCapturer.contains(reply)){
+        responseBody = m_dataCapturer[reply]->getCapturedBody();
+        delete m_dataCapturer[reply];
+        m_dataCapturer.remove(reply);
+    }
+    
     QVariant status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
     QVariant statusText = reply->attribute(QNetworkRequest::HttpReasonPhraseAttribute);
 
-    this->handleFinished(reply, status, statusText);
+    this->handleFinished(reply, status, statusText, responseBody);
 }
 
 void NetworkAccessManager::provideAuthentication(QNetworkReply* reply, QAuthenticator* authenticator)
@@ -494,12 +504,12 @@ void NetworkAccessManager::provideAuthentication(QNetworkReply* reply, QAuthenti
         authenticator->setPassword(m_password);
     } else {
         m_authAttempts = 0;
-        this->handleFinished(reply, 401, "Authorization Required");
+        this->handleFinished(reply, 401, "Authorization Required", QString(""));
         reply->close();
     }
 }
 
-void NetworkAccessManager::handleFinished(QNetworkReply* reply, const QVariant& status, const QVariant& statusText)
+void NetworkAccessManager::handleFinished(QNetworkReply* reply, const QVariant& status, const QVariant& statusText, const QString& responseBody)
 {
     QVariantList headers = getHeadersFromReply(reply);
 
@@ -513,6 +523,8 @@ void NetworkAccessManager::handleFinished(QNetworkReply* reply, const QVariant& 
     data["redirectURL"] = reply->header(QNetworkRequest::LocationHeader);
     data["headers"] = headers;
     data["time"] = QDateTime::currentDateTime();
+    data["body"] = responseBody;
+    data["body_size"] = responseBody.length();
 
     m_ids.remove(reply);
     m_started.remove(reply);

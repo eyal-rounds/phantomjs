@@ -27,6 +27,7 @@ HEADERS += \
     consts.h \
     utils.h \
     networkaccessmanager.h \
+    responsedatacapturer.h \
     cookiejar.h \
     filesystem.h \
     system.h \
@@ -45,6 +46,7 @@ SOURCES += phantom.cpp \
     main.cpp \
     utils.cpp \
     networkaccessmanager.cpp \
+    responsedatacapturer.cpp \
     cookiejar.cpp \
     filesystem.cpp \
     system.cpp \

@@ -1,4 +1,4 @@
-#inlcude "responsedatacapturer.h"
+#include "responsedatacapturer.h"
 
 ResponseDataCapturer::ResponseDataCapturer(bool shouldCaptureResponseBody): 
     m_shouldCaptureResponseBody(shouldCaptureResponseBody){
